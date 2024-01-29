@@ -1,6 +1,6 @@
 services:
   zeebe:
-    image: camunda/zeebe:latest
+    image: camunda/zeebe:8.4.1
     container_name: zeebe
     ports:
       - "26500:26500"
@@ -36,7 +36,7 @@ services:
       - elasticsearch
 
   operate:
-    image: camunda/operate:latest
+    image: camunda/operate:8.4.1
     container_name: operate
     ports:
       - "8081:8080"
