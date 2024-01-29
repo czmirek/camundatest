@@ -11,6 +11,13 @@ The requirements are following:
   - Optimize
   - WebModeler
 
+## How to set up
+
+- You need to create your OIDC provider. It can be KeyCloak, IdentityServer, does not matter as far as it can do OIDC.
+- Look in the `docker-compose-core.yaml` file and replace the URL where needed.
+- `docker compose -f docker-compose-core.yaml up --detach` for running
+- `docker compose -f docker-compose-core.yaml down` for stopping and removing
+
 ## Progress
 
 ### ✅ Zeebe
