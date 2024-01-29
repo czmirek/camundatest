@@ -1,0 +1,121 @@
+services:
+  zeebe:
+    image: camunda/zeebe:latest
+    container_name: zeebe
+    ports:
+      - "26500:26500"
+      - "9600:9600"
+    environment: # https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/environment-variables/
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+      - ZEEBE_DEBUG=true
+      - ZEEBE_LOGLEVEL=debug
+      - ZEEBE_LOG_LEVEL=debug
+      - ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK=0.998
+      - ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK=0.999
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE=identity
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL=http://docker.projectport.internal:8083/realms/master
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE=testaudience
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE=keycloak
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL=http://docker.projectport.internal:8083/realms/master
+
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9600' || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - zeebe:/usr/local/zeebe/data
+    networks:
+      - camunda-platform
+    depends_on:
+      - elasticsearch
+
+  operate:
+    image: camunda/operate:latest
+    container_name: operate
+    ports:
+      - "8081:8080"
+    environment: # https://docs.camunda.io/docs/self-managed/operate-deployment/configuration/
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - ZEEBE_CLIENT_ID=zeebeclient
+      - ZEEBE_CLIENT_SECRET=TZPLsKLEj0BlPB5NYyzGpYACPYhFh3P6
+      - ZEEBE_TOKEN_AUDIENCE=testaudience
+      - ZEEBE_AUTHORIZATION_SERVER_URL=http://docker.projectport.internal:8083/realms/master/protocol/openid-connect/token
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      # For more information regarding configuration with Identity see:
+      # https://docs.camunda.io/docs/self-managed/operate-deployment/authentication/#identity
+      - SPRING_PROFILES_ACTIVE=identity-auth
+      - CAMUNDA_OPERATE_IDENTITY_TYPE=GENERIC
+      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://docker.projectport.internal:8083/realms/master
+      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://docker.projectport.internal:8083/realms/master
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=QX8M7hXLYsTRAO3Vk0u92ZmtS6G6oA04
+      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=testaudience      
+      - CAMUNDA_OPERATE_IDENTITY_REDIRECTROOTURL=http://localhost:8081
+      - CAMUNDA_IDENTITY_TYPE=GENERIC
+      - CAMUNDA_IDENTITY_ISSUER=http://docker.projectport.internal:8083/realms/master
+      - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://docker.projectport.internal:8083/realms/master
+      - CAMUNDA_IDENTITY_CLIENT_ID=operate
+      - CAMUNDA_IDENTITY_CLIENT_SECRET=QX8M7hXLYsTRAO3Vk0u92ZmtS6G6oA04
+      - CAMUNDA_IDENTITY_AUDIENCE=testaudience      
+      - CAMUNDA_IDENTITY_REDIRECTROOTURL=http://localhost:8081
+      - CAMUNDA_OPERATE_MULTITENANCY_ENABLED=false
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://docker.projectport.internal:8083/realms/master
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://docker.projectport.internal:8083/realms/master/protocol/openid-connect/certs
+      - CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED=false
+      - ZEEBE_CLIENT_CONFIG_PATH=/tmp/zeebe_auth_cache
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -O - -q 'http://localhost:8080/actuator/health/readiness'" ]
+      interval: 30s
+      timeout: 1s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - operate_tmp:/tmp
+    networks:
+      - camunda-platform
+    depends_on:
+      - zeebe
+      - elasticsearch
+
+  elasticsearch: # https://hub.docker.com/_/elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      # allow running with low disk space
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - elastic:/usr/share/elasticsearch/data
+    networks:
+      - camunda-platform
+
+volumes:
+  zeebe:
+  elastic:
+  operate_tmp:
+
+networks:
+  camunda-platform:
