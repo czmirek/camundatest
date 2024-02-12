@@ -4,6 +4,19 @@
 ### We want to utilize the 8.4 OIDC support so there is no dependency for KeyClok
 
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+      KEYCLOAK_LOGLEVEL: INFO
+      ROOT_LOGLEVEL: INFO
+    ports:
+      - "8080:8080"
+      - "8787:8787"
+    command:
+      - start-dev
+    
   zeebe:
     image: camunda/zeebe:8.4.1
     container_name: zeebe
@@ -23,10 +36,10 @@ services:
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE=identity
       
       ### Zeebe works this way. It just checks the issuer, audience and needs the OIDC authority url.
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL=http://docker.projectport.internal:8083/realms/master
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL=http://keycloak:8083/realms/master
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE=testaudience
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE=keycloak ### although this value is "keycloak" in reality it works for generic OIDC as well.
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL=http://docker.projectport.internal:8083/realms/master
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL=http://keycloak:8083/realms/master
 
     restart: always
     healthcheck:
@@ -93,7 +106,7 @@ services:
 #      - elasticsearch
 
   elasticsearch: # https://hub.docker.com/_/elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     container_name: elasticsearch
     ports:
       - "9200:9200"
