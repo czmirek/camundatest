@@ -18,6 +18,38 @@ The requirements are following:
 - `docker compose -f docker-compose-core.yaml up --detach` for running
 - `docker compose -f docker-compose-core.yaml down` for stopping and removing
 
+## How to set up KeyCloak client for Zeebe
+
+### Step 1 - Client scope
+ 
+- Go to Client scopes
+- Click "Create client scope"
+  - Name: testaudience
+  - Leave everything else as is
+- Save
+- In the list of existing client scopes, click on the scope with the name "roles"
+- Click on tab "Mappers"
+- Remove the first row that has "audience" in name by clicking on the menu in the right part of the row and choose "Delete"
+
+This way we configured the audience token to be a single value and not array.
+
+### Step 2 - Client
+- Go to clients - Create client
+  - Client ID - "zeebeclient"
+  - Next
+  - Client authentication: **ON**
+  - Authorization: **OFF**
+  - Authentication flow: pick only **service accounts roles**
+  - Next --- leave everything in Login settings 
+  - ...and Save
+
+- Click on the newly created "zeebeclient"
+- Click on the tab "Client scopes"
+- Click on "Add client scope"
+- Pick "testaudience" and save with assigned type "Default"
+
+
+
 ## Progress
 
 ### ✅ Zeebe
