@@ -1,8 +1,5 @@
-### REPLACE http://docker.projectport.internal:8083/realms/master with your own OIDC provider, you can use KeyCloak
-### I did not want to include KeyCloak as a separate image because I want to avoid misunderstanding that
-### Camunda connects to KeyCloak directly. We do not want to connect to KeyCloak directly as Camunda does.
-### We want to utilize the 8.4 OIDC support so there is no dependency for KeyClok
-
+#zeebeclient
+#HjhUp3egZXpinRf4I8Oqk0vwR4N1COIe
 services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
@@ -11,16 +8,19 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin123
       KEYCLOAK_LOGLEVEL: INFO
       ROOT_LOGLEVEL: INFO
+    volumes:
+      - ./keycloak_data:/opt/keycloak/data/h2/
     ports:
-      - "8080:8080"
-      - "8787:8787"
-    command:
-      - start-dev
+      - "8083:8083"
+    command: [
+      "start-dev",
+      "--http-port=8083"
+    ]
     networks:
       - camunda-platform
     
   zeebe:
-    image: camunda/zeebe:8.4.1
+    image: camunda/zeebe:8.4.3
     container_name: zeebe
     ports:
       - "26500:26500"
@@ -38,10 +38,10 @@ services:
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE=identity
       
       ### Zeebe works this way. It just checks the issuer, audience and needs the OIDC authority url.
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/realms/master
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL=http://host.docker.internal:8083/realms/master
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE=testaudience
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE=keycloak ### although this value is "keycloak" in reality it works for generic OIDC as well.
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL=http://keycloak:8080/realms/master
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL=http://host.docker.internal:8083/realms/master
 
     restart: always
     healthcheck:
@@ -57,55 +57,45 @@ services:
     depends_on:
       - elasticsearch
 
-### WORK in progress, unfortunately still not working
-#  operate:
-#    image: camunda/operate:8.4.1
-#    container_name: operate
-#    ports:
-#      - "8081:8080"
-#    environment: # https://docs.camunda.io/docs/self-managed/operate-deployment/configuration/
-#      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-#      - ZEEBE_CLIENT_ID=zeebeclient
-#      - ZEEBE_CLIENT_SECRET=TZPLsKLEj0BlPB5NYyzGpYACPYhFh3P6
-#      - ZEEBE_TOKEN_AUDIENCE=testaudience
-#      - ZEEBE_AUTHORIZATION_SERVER_URL=http://docker.projectport.internal:8083/realms/master/protocol/openid-connect/token
-#      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-#      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-#      # For more information regarding configuration with Identity see:
-#      # https://docs.camunda.io/docs/self-managed/operate-deployment/authentication/#identity
-#      - SPRING_PROFILES_ACTIVE=identity-auth
-#      - CAMUNDA_OPERATE_IDENTITY_TYPE=GENERIC
-#      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://docker.projectport.internal:8083/realms/master
-#      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://docker.projectport.internal:8083/realms/master
-#      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-#      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=QX8M7hXLYsTRAO3Vk0u92ZmtS6G6oA04
-#      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=testaudience      
-#      - CAMUNDA_OPERATE_IDENTITY_REDIRECTROOTURL=http://localhost:8081
-#      - CAMUNDA_IDENTITY_TYPE=GENERIC
-#      - CAMUNDA_IDENTITY_ISSUER=http://docker.projectport.internal:8083/realms/master
-#      - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://docker.projectport.internal:8083/realms/master
-#      - CAMUNDA_IDENTITY_CLIENT_ID=operate
-#      - CAMUNDA_IDENTITY_CLIENT_SECRET=QX8M7hXLYsTRAO3Vk0u92ZmtS6G6oA04
-#      - CAMUNDA_IDENTITY_AUDIENCE=testaudience      
-#      - CAMUNDA_IDENTITY_REDIRECTROOTURL=http://localhost:8081
-#      - CAMUNDA_OPERATE_MULTITENANCY_ENABLED=false
-#      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://docker.projectport.internal:8083/realms/master
-#      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://docker.projectport.internal:8083/realms/master/protocol/openid-connect/certs
-#      - CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED=false
-#      - ZEEBE_CLIENT_CONFIG_PATH=/tmp/zeebe_auth_cache
-#    healthcheck:
-#      test: [ "CMD-SHELL", "wget -O - -q 'http://localhost:8080/actuator/health/readiness'" ]
-#      interval: 30s
-#      timeout: 1s
-#      retries: 5
-#      start_period: 30s
-#    volumes:
-#      - operate_tmp:/tmp
-#    networks:
-#      - camunda-platform
-#    depends_on:
-#      - zeebe
-#      - elasticsearch
+  operate:
+    image: camunda/operate:8.4.3
+    container_name: operate
+    ports:
+      - "8081:8080"
+    environment: # https://docs.camunda.io/docs/self-managed/operate-deployment/configuration/
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - ZEEBE_CLIENT_ID=zeebeclient
+      - ZEEBE_CLIENT_SECRET=HjhUp3egZXpinRf4I8Oqk0vwR4N1COIe
+      - ZEEBE_TOKEN_AUDIENCE=testaudience
+      - ZEEBE_AUTHORIZATION_SERVER_URL=http://host.docker.internal:8083/realms/master/protocol/openid-connect/token
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - SPRING_PROFILES_ACTIVE=identity-auth
+      - CAMUNDA_IDENTITY_TYPE=GENERIC
+      - CAMUNDA_IDENTITY_ISSUER=http://host.docker.internal:8083/realms/master
+      - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://host.docker.internal:8083/realms/master
+      - CAMUNDA_IDENTITY_CLIENT_ID=operateclient
+      - CAMUNDA_IDENTITY_CLIENT_SECRET=wURQYTx9ypveqeJtFYAsNWn4IM8PG9FV
+      - CAMUNDA_IDENTITY_AUDIENCE=testaudience      
+      - CAMUNDA_IDENTITY_REDIRECTROOTURL=http://host.docker.internal:8081
+      - CAMUNDA_OPERATE_MULTITENANCY_ENABLED=false
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://host.docker.internal:8083/realms/master
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://host.docker.internal:8083/realms/master/protocol/openid-connect/certs
+      - CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED=false
+      - ZEEBE_CLIENT_CONFIG_PATH=/tmp/zeebe_auth_cache
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -O - -q 'http://localhost:8080/actuator/health/readiness'" ]
+      interval: 30s
+      timeout: 1s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - operate_tmp:/tmp
+    networks:
+      - camunda-platform
+    depends_on:
+      - zeebe
+      - elasticsearch
 
   elasticsearch: # https://hub.docker.com/_/elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
