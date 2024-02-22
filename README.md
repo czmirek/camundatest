@@ -10,6 +10,7 @@ The requirements are following:
   - Operate
   - Optimize
   - WebModeler
+  - Tasklist
 
 ## How to set up
 
@@ -34,13 +35,33 @@ The following ENV vars must be configured
     - This is the URL of your OIDC authority
 
 ### 🛑 Operate
-todo 
 
-Cannot make this work following docs, Operate throws exception when OIDC redirects back.
+The following ENV vars must be configured
 
+- `CAMUNDA_IDENTITY_TYPE`
+  - Must be set to `GENERIC`
+- `CAMUNDA_IDENTITY_ISSUER`
+  - URL of your OIDC authority
+- `CAMUNDA_IDENTITY_ISSUER_BACKEND_URL`
+  - URL of your OIDC authority
+- `CAMUNDA_IDENTITY_CLIENT_ID`
+  - A client ID for Operate to access OIDC authority
+- `CAMUNDA_IDENTITY_CLIENT_SECRET`
+  - A client secret for Operate to access OIDC authority
+- `CAMUNDA_IDENTITY_AUDIENCE`
+  - This is any string that MUST be present in the `aud` property of the JWT token
+- `CAMUNDA_IDENTITY_REDIRECTROOTURL`
+  - Host URL of Operate to which OIDC redirects to
+- `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI`
+  - URL of your OIDC authority
+- `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI`
+  - OIDC JWKS endpoint
 
 ### 🛑 Optimize
 todo
 
 ### 🛑 WebModeler
+todo
+
+### 🛑 Tasklist
 todo
