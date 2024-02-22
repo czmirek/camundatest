@@ -34,7 +34,7 @@ The following ENV vars must be configured
 - `ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL`
     - This is the URL of your OIDC authority
 
-### 🛑 Operate
+### ✅ Operate
 
 The following ENV vars must be configured
 
